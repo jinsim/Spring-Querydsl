@@ -6,12 +6,14 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.Commit;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.entity.Hello;
 import study.querydsl.entity.QHello;
 
 @SpringBootTest
 @Transactional
+@Commit // 테스트에 Transactional 이 있으면 롤백이 되기 때문에, 이를 방지하기 위해 사용
 class QuerydslApplicationTests {
 	@Autowired
 	EntityManager em;
