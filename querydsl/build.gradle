@@ -2,6 +2,10 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.1.2'
 	id 'io.spring.dependency-management' version '1.1.2'
+	// querydsl관련 명령어를 gradle탭에 생성해준다. (권장사항)
+	//	id "com.ewerk.gradle.plugins.querydsl" version "1.0.10" // ⭐ Querydsl 플러그인 사용 X
+	//	gradlew로 빌드할 때, 문제가 있어서 플러그인은 사용하면 안된다!!!
+	// Spring을 로컬에서 실행, 빌드하는 건 되지만 배포를 위해 gradlew를 사용해서 빌드를 하면, 동일한 Q파일을 생성하지말라고 에러가 뜬다.
 }
 
 group = 'study'
@@ -28,8 +32,30 @@ dependencies {
 	runtimeOnly 'com.h2database:h2'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+	// Querydsl 추가 (Spring Boot 3.x 이상)
+	implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
+	annotationProcessor "com.querydsl:querydsl-apt:${dependencyManagement.importedProperties['querydsl.version']}:jakarta"
+	annotationProcessor "jakarta.annotation:jakarta.annotation-api"
+	annotationProcessor "jakarta.persistence:jakarta.persistence-api"
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+
+// === Querydsl 빌드 옵션 (선택사항) ===
+def querydslDir = "$buildDir/generated/querydsl"
+
+sourceSets {
+	main.java.srcDirs += [ querydslDir ]
+}
+
+tasks.withType(JavaCompile) {
+	options.annotationProcessorGeneratedSourcesDirectory = file(querydslDir)
+}
+
+clean.doLast {
+	file(querydslDir).deleteDir()
 }
