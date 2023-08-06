@@ -4,6 +4,8 @@ import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.PersistenceUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -349,5 +351,49 @@ public class QuerydslBasicTest {
         for (Tuple tuple : result) {
             System.out.println("t=" + tuple);
         }
+    }
+
+
+    @PersistenceUnit
+    // getPersistenceUtiUtil().isLoaded() 를 쓸 수 있다. 초기화 되었는지 확인
+    EntityManagerFactory emf;
+    @Test
+    public void fetchJoinNo() throws Exception {
+        em.flush();
+        em.clear();
+        // 페치 조인을 할 때는, 영속성 컨텍스트를 바로바로 안 지우면 결과를 제대로 보기 어렵다.
+        // 영속성 컨텍스트에 있는 것을 DB에 반영하고, 영속성 컨텍스트를 비운 다음에 시작한다.
+
+        Member findMember = queryFactory
+                .selectFrom(member)
+                .where(member.username.eq("member1"))
+                .fetchOne();
+        // Member에서 team의 연관관게를 LAZY로 세팅했다. 따라서 Member만 조회된다.
+
+        boolean loaded =
+                emf.getPersistenceUnitUtil().isLoaded(findMember.getTeam());
+        // emf : 엔티티매니저를 만드는 공장
+        // isLoaded를 하면 이미 로딩된 엔티티인지, 초기화가 안된 엔티티인지 알려준다.
+
+        assertThat(loaded).as("페치 조인 미적용").isFalse();
+    }
+
+    @Test
+    public void fetchJoin() throws Exception {
+        em.flush();
+        em.clear();
+
+        Member findMember = queryFactory
+                .selectFrom(member)
+                .join(member.team, team).fetchJoin()
+                // member를 조회할 때 연관된 team을 한 쿼리로 한번에 긁어온다.
+                .where(member.username.eq("member1"))
+                .fetchOne();
+
+        boolean loaded =
+                emf.getPersistenceUnitUtil().isLoaded(findMember.getTeam());
+        // true일 것이다.
+
+        assertThat(loaded).as("페치 조인").isTrue();
     }
 }
