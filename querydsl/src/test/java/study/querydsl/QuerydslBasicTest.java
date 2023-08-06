@@ -1,5 +1,6 @@
 package study.querydsl;
 
+import com.querydsl.core.QueryResults;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,6 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.entity.Member;
 import study.querydsl.entity.Team;
 import study.querydsl.entity.QMember;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static study.querydsl.entity.QMember.member;
@@ -92,5 +95,37 @@ public class QuerydslBasicTest {
                 .fetchOne();
 
         assertThat(findMember.getUsername()).isEqualTo("member1");
+    }
+
+    @Test
+    public void resultFetch() {
+        // 멤버 목록을 리스트로 조회
+        List<Member> fetch = queryFactory
+                .selectFrom(member)
+                .fetch();
+
+        // 멤버 단건 조회
+        Member fetchOne = queryFactory
+                .selectFrom(member)
+                .fetchOne();
+
+        // 처음 한 건 조회. limit(1).fetchOne()과 동일
+        Member oneMember =
+                queryFactory.selectFrom(QMember.member)
+                        .fetchFirst();
+
+        // 페이징이 나감 -> 카운트 쿼리 + 데이터 쿼리 같이나감
+        QueryResults<Member> results = queryFactory
+                .selectFrom(QMember.member)
+                .fetchResults();
+
+        results.getTotal(); // 페이징을 하기 위해서 total count를 가져와야 한다.
+        // total이 있어야 1,2,3,,, 몇번째 페이지까지 있는지 보여줄 수 있다.
+        List<Member> content = results.getResults();
+        // results를 가져올 때는 member 데이터를 다 가져오지만, total을 가져올 때는 count 쿼리만 나간다.
+
+        long total = queryFactory.selectFrom(member)
+                .fetchCount();
+        // select절에서 count 쿼리만 나간다.
     }
 }
