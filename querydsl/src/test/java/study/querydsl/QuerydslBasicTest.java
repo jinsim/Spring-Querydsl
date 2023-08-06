@@ -70,4 +70,27 @@ public class QuerydslBasicTest {
 // Querydsl은 JPQL 빌더
 // JPQL: 문자(실행 시점 오류), Querydsl: 코드(컴파일 시점 오류)
 // JPQL: 파라미터 바인딩 직접, Querydsl: 파라미터 바인딩 자동 처리
+
+    @Test
+    public void search() {
+        Member findMember = queryFactory
+                .selectFrom(member)
+                .where(member.username.eq("member1")
+                        .and(member.age.eq(10))) // or 등 여러가지 가능
+                .fetchOne();
+
+        assertThat(findMember.getUsername()).isEqualTo("member1");
+    }
+    @Test
+    public void searchAndParam() {
+        Member findMember = queryFactory
+                .selectFrom(member)
+                .where(
+                        member.username.eq("member1"),
+                        member.age.eq(10)
+                )
+                .fetchOne();
+
+        assertThat(findMember.getUsername()).isEqualTo("member1");
+    }
 }
