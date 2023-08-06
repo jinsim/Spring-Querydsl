@@ -265,4 +265,50 @@ public class QuerydslBasicTest {
         Tuple targetAge = fetch.get(0);
         assertThat(targetAge.get(member.age)).isEqualTo(40);
     }
+
+    /**
+     * 팀 A에 소속된 모든 회원
+     */
+    @Test
+    public void join() throws Exception {
+
+        // QMember member = QMember.member;
+        // QTeam team = QTeam.team;
+
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .join(member.team, team)
+                // .rightJoin(member.team, team)
+                // .leftJoin(member.team, team)
+                .where(team.name.eq("teamA"))
+                .fetch(); // inner join
+
+        assertThat(result)
+                .extracting("username")
+                .containsExactly("member1", "member2");
+    }
+
+    /**
+     * 세타 조인
+     * 회원의 이름이 팀 이름과 같은 회원 조회
+     */
+    @Test
+    public void theta_join() throws Exception {
+
+        em.persist(new Member("teamA"));
+        em.persist(new Member("teamB"));
+
+        List<Member> result = queryFactory
+                .select(member)
+                .from(member,team) // 세타 조인은 from 절에 여러 엔티티를 선택한다.
+                // 모든 회원과 모든 팀을 조인한다.
+                // 그 다음 조인한 테이블을 Where 절에서 필터링 한다.
+                // DB마다 성능 최적화를 하긴 한다.
+                .where(member.username.eq(team.name)) // 회원의 이름과 팀 이름과 같은 경우
+                .fetch();
+
+        assertThat(result)
+                .extracting("username")
+                .containsExactly("teamA","teamB");
+    }
 }
