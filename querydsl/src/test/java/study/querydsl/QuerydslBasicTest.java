@@ -128,4 +128,62 @@ public class QuerydslBasicTest {
                 .fetchCount();
         // select절에서 count 쿼리만 나간다.
     }
+
+    /**
+     * 회원 정렬 순서
+     * 1. 회원 나이 내림차순 (Desc)
+     * 2. 회원 이름 오름차순 (asc)
+     * 단 2에서 회원 이름이 없으면 마지막에 출력 (Nulls last)
+     */
+    @Test
+    public void sort() {
+
+        em.persist(new Member(null,100));
+        em.persist(new Member("member5", 100));
+        em.persist(new Member("member6", 100));
+
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .where(member.age.eq(100))
+                .orderBy(member.age.desc(), member.username.asc().nullsLast())
+                .fetch();
+
+        Member member5 = result.get(0);
+        Member member6 = result.get(1);
+        Member memberNull = result.get(2);
+
+        assertThat(member5.getUsername()).isEqualTo("member5");
+        assertThat(member6.getUsername()).isEqualTo("member6");
+        assertThat(memberNull.getUsername()).isNull();
+    }
+
+    // 조회 건수 제한
+    @Test
+    public void paging1() {
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .orderBy(member.username.desc())
+                .offset(1) //앞에 몇개 스킵할거야? -> 1은 하나 스킵할거야. (0부터 시작)
+                .limit(2) //최대 2건 조회
+                .fetch();
+
+
+        assertThat(result.size()).isEqualTo(2);
+    }
+
+    // 전체 조회 수가 필요하면?
+    @Test
+    public void paging2() {
+        QueryResults<Member> result = queryFactory
+                .selectFrom(member)
+                .orderBy(member.username.desc())
+                .offset(1) //앞에 몇개 스킵할거야? -> 1은 하나 스킵할거야. (0부터 시작)
+                .limit(2)
+                .fetchResults();
+
+        assertThat(result.getTotal()).isEqualTo(4);
+        assertThat(result.getLimit()).isEqualTo(2);
+        assertThat(result.getOffset()).isEqualTo(1);
+        assertThat(result.getResults().size()).isEqualTo(2);
+    }
 }
