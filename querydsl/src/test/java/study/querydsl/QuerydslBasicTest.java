@@ -3,6 +3,7 @@ package study.querydsl;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -532,6 +533,41 @@ public class QuerydslBasicTest {
             Integer rank = tuple.get(rankPath);
             System.out.println("username = " + username + " age = " + age + " rank = "
                     + rank);
+        }
+    }
+
+    /**
+     * 상수 - Expressions.constant("상수")
+     */
+    @Test
+    public void constant() throws Exception {
+        List<Tuple> result = queryFactory
+                .select(member.username, Expressions.constant("A")) // 상수
+                .from(member)
+                .fetch();
+
+        for (Tuple tuple : result) {
+            System.out.println("tuple = " + tuple);
+        }
+    }
+
+    /**
+     * 문자 더하기
+     */
+    @Test
+    public void concat() throws Exception {
+
+        // username_age로 문자열 합쳐서 select하고 싶을 때
+        List<String> result = queryFactory
+                .select(member.username.concat("_").concat(member.age.stringValue()))
+                // 문자 아닌 타입들은 stringValue()로 문자로 변환 가능(ENUM 처리시에도 자주 사용!)
+                .from(member)
+                .where(member.username.eq("member1"))
+                .fetch();
+
+
+        for (String s : result) {
+            System.out.println("s = " + s);
         }
     }
 
