@@ -2,6 +2,8 @@ package study.querydsl;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
@@ -15,6 +17,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
+import study.querydsl.dto.MemberDto;
+import study.querydsl.dto.UserDto;
 import study.querydsl.entity.Member;
 import study.querydsl.entity.Team;
 import study.querydsl.entity.QMember;
@@ -608,5 +612,129 @@ public class QuerydslBasicTest {
             System.out.println("age = " + age);
         }
     }
+
+
+    /**
+     * 프로젝션 결과 반환 - DTO 조회
+     * JPQL 버전
+     */
+    @Test
+    public void findDtoByJPQL() throws Exception {
+        List<MemberDto> result = em.createQuery(
+                "select new study.querydsl.dto.MemberDto(m.username, m.age) from Member m",
+                        MemberDto.class)
+                // select절에 MemberDto의 생성자 호출(단, 패키지 명을 풀로 작성)
+                .getResultList();
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+
+    // 방법 1) 프로퍼티 접근 - Setter
+    // * 기본 생성자, setter 필요
+    @Test
+    public void findDtoBySetter() throws Exception {
+        List<MemberDto> result = queryFactory
+                .select(Projections.bean(MemberDto.class, // bean
+                        member.username, // 순서 상관 X
+                        member.age))
+                .from(member)
+                .fetch();
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+
+    // 방법 2) 필드 직접 접근
+    // * getter, setter 필요 X, 필드에 바로 값을 넣음.
+    // * 기본 생성자는 필요
+    @Test
+    public void findDtoByField() throws Exception {
+        List<MemberDto> result = queryFactory
+                .select(Projections.fields(MemberDto.class, // fields
+                        member.age, // 순서 상관 X
+                        member.username))
+                .from(member)
+                .fetch();
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+
+    // 방법 3) 생성자 사용
+    // * 기본 생성자 필요 X, 생성자 파라미터 순서 지켜야함.
+    @Test
+    public void findDtoByConstructor() throws Exception {
+        List<MemberDto> result = queryFactory
+                .select(Projections.constructor(MemberDto.class, // constructor
+                        member.username,// 대신 이 순서가 DTO의 생성자와 순서가 맞아야함.
+                        member.age))
+                .from(member)
+                .fetch();
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+
+    /**
+     * setter 프로퍼티접근, 필드 직접 접근 : DTO와 Entity의 필드명이 다를 경우 별칭 부여 필요
+     *
+     * + 서브 쿼리 별칭 부여 필요
+     */
+    @Test
+    public void findUserDto() throws Exception {
+        QMember memberSub = new QMember("memberSub"); // 서브쿼리용
+
+        // 내용 1) Entity와 Dto의 필드명이 다를 경우 : as로 해결!
+        // as : 필드에 별칭 적용
+        List<UserDto> result = queryFactory
+                .select(Projections.fields(UserDto.class,
+                        //member.username, // 문제 : 프로퍼티, 필드 접근 방식에서 이름이 다를 경우 제대로 select 안됨 -> sout name = null로 나옴
+                        member.username.as("name"),// 해결 : as.("DTO의 필드명") 또는 ExpressionUtils(member.username, "name")
+                        member.age))
+                .from(member)
+                .fetch();
+
+        // 내용 2) ExpressionUtils.as(source, alias) : 필드, 서브쿼리에 별칭 적용
+        List<UserDto> result2 = queryFactory
+                .select(Projections.fields(UserDto.class,
+                        member.username.as("name"),
+                        // 서브쿼리 작성시, 어떤 필드에 값을 넣어줘야하는지 필드명 별칭부여 필요
+                        ExpressionUtils.as(select(memberSub.age.max())
+                                .from(memberSub), "age")
+                ))
+                .from(member)
+                .fetch();
+
+        for (UserDto userDto : result) {
+            System.out.println("userDto = " + userDto);
+        }
+
+        for (UserDto userDto : result2) {
+            System.out.println("userDto = " + userDto);
+        }
+    }
+
+    /**
+     * 생성자 사용의 경우: DTO와 Entity의 필드명이 달라도, 이름이 아닌 타입을 보기 때문에 상관없다.
+     */
+    @Test
+    public void findUserDtoByConstructor() throws Exception {
+        List<UserDto> result = queryFactory
+                .select(Projections.constructor(UserDto.class, // constructor, UserDto
+                        member.username,
+                        member.age))
+                .from(member)
+                .fetch();
+
+        for (UserDto userDto : result) {
+            System.out.println("userDto = " + userDto);
+        }
+    }
+
 
 }
