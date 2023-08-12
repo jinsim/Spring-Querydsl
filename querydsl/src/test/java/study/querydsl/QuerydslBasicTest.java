@@ -823,6 +823,62 @@ public class QuerydslBasicTest {
         return usernameEq(usernameCond).and(ageEq(ageCond));
     }
 
+    /**
+     * 수정, 삭제 벌크 연산
+     * 예) 모든 사람 연봉 연상: 엔티티 하나 하나 update 쿼리 날리기(by 더티체킹)보다는 한번의 update 쿼리로 처리하는 것이 효율적
+     */
+    @Test
+    public void bulkUpdate() throws Exception {
+        // member1 = 10살 -> 비회원
+        // member2 = 20살 -> 비회원
+
+        // 회원 중에서 나이가 28살보다 작은 회원의 이름을 "비회원"으로 변경
+        long count = queryFactory // count = update의 영향을 받은 row의 수
+                .update(member)
+                .set(member.username, "비회원")
+                .where(member.age.lt(28))
+                .execute();
+
+        // 벌크 연산 이후, 영속성 컨텍스트 초기화를 해야한다.
+        // 벌크 연산은 DB에 바로 쿼리를 날리기 때문에 괴리가 생긴다.
+        em.flush();
+        em.clear();
+
+        // 조회
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .fetch();
+
+        for (Member member1 : result) {
+            System.out.println("member1 = " + member1);
+        }
+    }
+
+    /**
+     * 벌크 연산 : add, multiply
+     */
+    @Test
+    public void bulkAdd() throws Exception {
+        long count = queryFactory
+                .update(member)
+                .set(member.age, member.age.add(1))
+                // minus 없음. add(-1)사용. 곱하기: multiply(x)
+                .execute();
+
+    }
+
+    /**
+     * 쿼리 한번으로 대량 데이터 삭제
+     */
+    @Test
+    public void bulkDelete() throws Exception {
+        long count = queryFactory
+                .delete(member) // 삭제
+                .where(member.age.gt(18)) // 18살 이상
+                .execute();
+
+    }
+
 
 
 }
