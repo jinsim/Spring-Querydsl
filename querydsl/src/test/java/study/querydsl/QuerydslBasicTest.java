@@ -1,5 +1,6 @@
 package study.querydsl;
 
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.ExpressionUtils;
@@ -749,8 +750,42 @@ public class QuerydslBasicTest {
         for (MemberDto memberDto : result) {
             System.out.println("memberDto = " + memberDto);
         }
-
         // 단점 : DTO에 QueryDsl 어노테이션 유지 + DTO까지 Q파일 생성 필요
+    }
+
+    /**
+     * 동적 쿼리 - BooleanBuilder 사용
+     */
+    @Test
+    public void 동적쿼리_BooleanBuilder() throws Exception {
+        String usernameParam = "member1";
+        Integer ageParam = null;
+
+        List<Member> result = searchMember1(usernameParam, ageParam);
+        assertThat(result.size()).isEqualTo(1);
+    }
+
+    /**
+     * 파라미터의 null 여부에 따라서 쿼리가 동적으로 바뀌어야함.
+     */
+    private List<Member> searchMember1(String usernameCond, Integer ageCond) {
+
+        BooleanBuilder builder = new BooleanBuilder();
+        // BooleanBuilder builder = new BooleanBuilder(member.username.eq(usernameCond));
+// 초기값 설정도 가능. username은 필수라서 null이 들어오지 않는 경우.
+
+        if(usernameCond != null){ // usernameCond가 null이 아니면
+            builder.and(member.username.eq(usernameCond)); // builder에 and 조건 추가
+        }
+
+        if(ageCond != null){ // ageCond가 null이 아니면
+            builder.and(member.age.eq(ageCond)); // builder에 and 조건 추가
+        }
+
+        return queryFactory
+                .selectFrom(member)
+                .where(builder) // where에 builder
+                .fetch();
     }
 
 
