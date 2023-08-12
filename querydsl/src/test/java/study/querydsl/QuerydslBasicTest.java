@@ -879,6 +879,44 @@ public class QuerydslBasicTest {
 
     }
 
+    /**
+     * member M으로 변경하는 replace 함수 사용
+     */
+    @Test
+    public void sqlFunction1() {
+        // SQL function 호출하기
+        List<String> result1 = queryFactory
+                .select(Expressions.stringTemplate(
+                        "function('replace', {0}, {1}, {2})",
+                        member.username, "member", "M"))
+                .from(member)
+                .fetch();
+    }
 
+    /**
+     * 소문자로 변경해서 비교해라.
+     */
+    @Test
+    public void sqlFunction2() {
+        List<String> result2 = queryFactory
+                .select(member.username)
+                .from(member)
+                .where(member.username.eq(
+                        Expressions.stringTemplate(
+                                "function('lower', {0})",
+                                member.username)))
+                .fetch();
+    }
 
+    /**
+     * lower 같은 ansi 표준 함수들은 querydsl이 상당부분 내장하고 있다. 따라서 다음과 같이 처리해도 결과 는 같다.
+     */
+    @Test
+    public void sqlFunction3() {
+        List<String> result2 = queryFactory
+                .select(member.username)
+                .from(member)
+                .where(member.username.eq(member.username.lower()))
+                .fetch();
+    }
 }
