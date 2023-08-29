@@ -33,6 +33,7 @@ import static com.querydsl.jpa.JPAExpressions.select;
 import static org.assertj.core.api.Assertions.assertThat;
 import static study.querydsl.entity.QMember.member;
 import static study.querydsl.entity.QTeam.team;
+
 @SpringBootTest
 @Transactional
 public class QuerydslBasicTest {
@@ -127,12 +128,12 @@ public class QuerydslBasicTest {
 
         // 처음 한 건 조회. limit(1).fetchOne()과 동일
         Member oneMember =
-                queryFactory.selectFrom(QMember.member)
+                queryFactory.selectFrom(member)
                         .fetchFirst();
 
         // 페이징이 나감 -> 카운트 쿼리 + 데이터 쿼리 같이나감
         QueryResults<Member> results = queryFactory
-                .selectFrom(QMember.member)
+                .selectFrom(member)
                 .fetchResults();
 
         results.getTotal(); // 페이징을 하기 위해서 total count를 가져와야 한다.
@@ -327,7 +328,7 @@ public class QuerydslBasicTest {
     }
 
     /**
-     * 예) 회원과 팀을 조인하면서, 팀 이름이 teamA인 팀만 조인, 회원은 모두 조회
+     * 예. 회원과 팀을 조인하면서, 팀 이름이 teamA인 팀만 조인, 회원은 모두 조회
      * JPQL: SELECT m, t FROM Member m LEFT JOIN m.team t on t.name = 'teamA'
      * SQL: SELECT m.*, t.* FROM Member m LEFT JOIN Team t ON m.TEAM_ID=t.id and
      t.name='teamA'
